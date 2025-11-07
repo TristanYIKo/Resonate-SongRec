@@ -15,10 +15,11 @@ def generate_recommendations(
     Generate track recommendations based on user's listening history
     
     This function:
-    1. Extracts audio features from user's tracks
-    2. Computes a user profile vector (average of all features)
-    3. Calculates similarity scores between user profile and all tracks
-    4. Returns top N tracks with highest similarity scores
+    1. Extracts audio features from user's tracks (if available)
+    2. If no features available, returns top tracks as recommendations
+    3. Computes a user profile vector (average of all features)
+    4. Calculates similarity scores between user profile and all tracks
+    5. Returns top N tracks with highest similarity scores
     
     Args:
         user_tracks: List of track dictionaries with audio features
@@ -53,8 +54,18 @@ def generate_recommendations(
             track_features.append(features)
             valid_tracks.append(track)
     
+    # If no tracks have audio features, return top tracks with dummy scores
     if len(track_features) == 0:
-        return []
+        print("No audio features available, returning top tracks as recommendations")
+        recommendations = []
+        for i, track in enumerate(user_tracks[:top_n]):
+            recommendations.append({
+                'spotify_track_id': track['spotify_track_id'],
+                'name': track.get('name', ''),
+                'artist': track.get('artist', ''),
+                'score': 1.0 - (i * 0.05)  # Decreasing score from 1.0 to 0.5
+            })
+        return recommendations
     
     # Convert to numpy array
     features_array = np.array(track_features)

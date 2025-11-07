@@ -17,21 +17,27 @@ export async function POST(request: Request) {
     }
 
     const userId = session.user.id
+    console.log('User ID:', userId)
 
     // Get provider token from session
     // Supabase stores provider tokens in the session's provider_token
-    const providerToken = session.provider_token
-    const providerRefreshToken = session.provider_refresh_token
+    let accessToken = session.provider_token
 
-    if (!providerToken) {
-      return NextResponse.json({ 
-        error: 'Spotify tokens not found. Please re-authenticate.' 
-      }, { status: 400 })
+    if (!accessToken) {
+      // Try to get a fresh token from Supabase
+      const { data, error } = await supabase.auth.refreshSession()
+      if (error || !data.session?.provider_token) {
+        return NextResponse.json({ 
+          error: 'Spotify tokens not found. Please log out and log back in.' 
+        }, { status: 400 })
+      }
+      accessToken = data.session.provider_token
     }
 
-    let accessToken = providerToken
+    console.log('Using access token for Spotify API (first 20 chars):', accessToken?.substring(0, 20))
 
     // Fetch top tracks from Spotify
+    console.log('Fetching top tracks from Spotify...')
     const topTracksResponse = await fetch(
       'https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=medium_term',
       {
@@ -42,46 +48,39 @@ export async function POST(request: Request) {
     )
 
     if (!topTracksResponse.ok) {
+      const errorText = await topTracksResponse.text()
+      console.error('Spotify top tracks error:', topTracksResponse.status, errorText)
       return NextResponse.json({ 
-        error: 'Failed to fetch tracks from Spotify' 
+        error: `Failed to fetch tracks from Spotify: ${topTracksResponse.status}` 
       }, { status: 400 })
     }
 
     const topTracksData = await topTracksResponse.json()
-    const trackIds = topTracksData.items.map((track: any) => track.id)
-
-    // Fetch audio features for tracks
-    const audioFeaturesResponse = await fetch(
-      `https://api.spotify.com/v1/audio-features?ids=${trackIds.join(',')}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      }
-    )
-
-    if (!audioFeaturesResponse.ok) {
+    console.log('Fetched tracks count:', topTracksData.items?.length)
+    
+    if (!topTracksData.items || topTracksData.items.length === 0) {
       return NextResponse.json({ 
-        error: 'Failed to fetch audio features from Spotify' 
+        error: 'No tracks found in your Spotify listening history' 
       }, { status: 400 })
     }
+    
+    const trackIds = topTracksData.items.map((track: any) => track.id)
 
-    const audioFeaturesData = await audioFeaturesResponse.json()
-
-    // Prepare track data for insertion
-    const tracksToInsert = topTracksData.items.map((track: any, index: number) => {
-      const features = audioFeaturesData.audio_features[index]
+    // For now, we'll save tracks without audio features to avoid the 403 error
+    // Audio features endpoint requires additional Spotify app permissions
+    // We'll use basic track info instead
+    const tracksToInsert = topTracksData.items.map((track: any) => {
       return {
         user_id: userId,
         spotify_track_id: track.id,
         name: track.name,
         artist: track.artists.map((a: any) => a.name).join(', '),
         album: track.album.name,
-        danceability: features?.danceability || null,
-        energy: features?.energy || null,
-        valence: features?.valence || null,
-        tempo: features?.tempo || null,
-        acousticness: features?.acousticness || null
+        danceability: null,
+        energy: null,
+        valence: null,
+        tempo: null,
+        acousticness: null
       }
     })
 

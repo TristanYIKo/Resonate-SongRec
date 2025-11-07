@@ -52,6 +52,8 @@ export default function Home() {
     if (error) {
       console.error('Login error:', error)
       setMessage('Failed to login with Spotify')
+    } else {
+      console.log('Login initiated with scopes: user-read-email user-top-read user-read-recently-played')
     }
   }
 
