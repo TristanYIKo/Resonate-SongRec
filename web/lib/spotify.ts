@@ -147,8 +147,8 @@ export async function getRecommendationsFromArtistTopTracks(
   seedTracks: any[],
   limit: number = 20
 ): Promise<SpotifyTrack[]> {
-  console.log('Using simple recommendation method: artist top tracks')
-  console.log('Seed tracks received:', seedTracks.length)
+  console.log('🎵 Using simple recommendation method: artist top tracks')
+  console.log('   Seed tracks received:', seedTracks.length)
   
   const recommendations: SpotifyTrack[] = []
   const seenTrackIds = new Set<string>()
@@ -158,49 +158,57 @@ export async function getRecommendationsFromArtistTopTracks(
     if (track.id) seenTrackIds.add(track.id)
   })
   
-  // Extract artist IDs from seed tracks
+  // Extract artist IDs from seed tracks - use more for variety
   const artistIds = new Set<string>()
-  seedTracks.forEach(track => {
+  seedTracks.forEach(track => {  // Use all seed tracks
     if (track.artists && Array.isArray(track.artists)) {
       track.artists.forEach((artist: any) => {
         if (artist.id) {
           artistIds.add(artist.id)
-          console.log(`Added artist: ${artist.name} (${artist.id})`)
+          console.log(`   Added artist: ${artist.name} (${artist.id})`)
         }
       })
     }
   })
   
-  console.log(`Found ${artistIds.size} unique artists from seed tracks`)
+  console.log(`   Found ${artistIds.size} unique artists from seed tracks`)
   
   if (artistIds.size === 0) {
-    console.error('No artist IDs found in seed tracks!')
+    console.error('❌ No artist IDs found in seed tracks!')
     return []
   }
   
+  // Shuffle artists for randomization
+  const shuffledArtists = Array.from(artistIds).sort(() => 0.5 - Math.random())
+  
   // For each artist, get their top tracks
-  for (const artistId of Array.from(artistIds)) {
+  for (const artistId of shuffledArtists) {
     if (recommendations.length >= limit) break
     
     try {
-      console.log(`Fetching top tracks for artist ${artistId}...`)
+      console.log(`   Fetching top tracks for artist ${artistId}...`)
       
-      const topTracksUrl = `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`
+      const topTracksUrl = `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=from_token`
       const topTracksResponse = await fetch(topTracksUrl, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       })
       
       if (!topTracksResponse.ok) {
-        console.error(`Failed to fetch top tracks: ${topTracksResponse.status}`)
+        console.error(`   Failed to fetch top tracks: ${topTracksResponse.status}`)
         const errorText = await topTracksResponse.text()
-        console.error('Error response:', errorText)
+        console.error('   Error response:', errorText)
         continue
       }
       
       const topTracksData = await topTracksResponse.json()
-      const tracks = topTracksData.tracks || []
+      const allTracks = topTracksData.tracks || []
       
-      console.log(`✓ Got ${tracks.length} tracks from artist ${artistId}`)
+      // Shuffle and take random subset for variety
+      const shuffledTracks = allTracks.sort(() => 0.5 - Math.random())
+      const numToTake = Math.floor(Math.random() * 3) + 2 // Random 2-4 tracks
+      const tracks = shuffledTracks.slice(0, numToTake)
+      
+      console.log(`   ✓ Got ${allTracks.length} tracks from artist, adding ${tracks.length}`)
       
       // Add tracks to recommendations (skip ones we already have)
       let added = 0
@@ -212,28 +220,29 @@ export async function getRecommendationsFromArtistTopTracks(
         }
       })
       
-      console.log(`Added ${added} new tracks (total: ${recommendations.length})`)
+      console.log(`   Added ${added} new tracks (total: ${recommendations.length}/${limit})`)
       
     } catch (error) {
-      console.error('Error fetching top tracks for artist:', error)
+      console.error('   Error fetching top tracks for artist:', error)
     }
   }
   
-  console.log(`Generated ${recommendations.length} recommendations from artist top tracks`)
+  console.log(`✅ Generated ${recommendations.length} recommendations from artist top tracks`)
   return recommendations
 }
 
 /**
  * Get recommendations using related artists and their top tracks
  * This is an alternative that works when the recommendations endpoint is not available
+ * Uses Spotify's ML-powered "Related Artists" to find similar music
  */
 export async function getRecommendationsFromRelatedArtists(
   accessToken: string,
   seedTracks: any[],
   limit: number = 20
 ): Promise<SpotifyTrack[]> {
-  console.log('Using alternative recommendation method: related artists')
-  console.log('Seed tracks received:', seedTracks.length)
+  console.log('🎵 Using SMART recommendation method: Related Artists (Spotify ML-powered)')
+  console.log('   Seed tracks received:', seedTracks.length)
   
   const recommendations: SpotifyTrack[] = []
   const seenTrackIds = new Set<string>()
@@ -243,30 +252,35 @@ export async function getRecommendationsFromRelatedArtists(
     if (track.id) seenTrackIds.add(track.id)
   })
   
-  // Extract artist IDs from seed tracks
+  // Extract artist IDs from seed tracks - use more seeds for variety
   const artistIds = new Set<string>()
-  seedTracks.slice(0, 5).forEach(track => {
+  seedTracks.slice(0, 10).forEach(track => {  // Increased from 5 to 10
     if (track.artists && Array.isArray(track.artists)) {
       track.artists.forEach((artist: any) => {
         if (artist.id) {
           artistIds.add(artist.id)
-          console.log(`Added artist: ${artist.name} (${artist.id})`)
+          console.log(`   Added artist: ${artist.name} (${artist.id})`)
         }
       })
     }
   })
   
-  console.log(`Found ${artistIds.size} unique artists from seed tracks`)
+  console.log(`   Found ${artistIds.size} unique artists from seed tracks`)
   
   if (artistIds.size === 0) {
-    console.error('No artist IDs found in seed tracks!')
+    console.error('❌ No artist IDs found in seed tracks!')
     return []
   }
   
-  // For each artist, get related artists
-  for (const artistId of Array.from(artistIds).slice(0, 3)) {
+  // Shuffle artists for randomization on each call
+  const shuffledArtists = Array.from(artistIds).sort(() => 0.5 - Math.random())
+  
+  // Process more artists for better variety (up to 5 instead of 3)
+  for (const artistId of shuffledArtists.slice(0, 5)) {
+    if (recommendations.length >= limit) break
+    
     try {
-      console.log(`Fetching related artists for ${artistId}...`)
+      console.log(`   Fetching related artists for ${artistId}...`)
       
       // Get related artists
       const relatedUrl = `https://api.spotify.com/v1/artists/${artistId}/related-artists`
@@ -275,36 +289,54 @@ export async function getRecommendationsFromRelatedArtists(
       })
       
       if (!relatedResponse.ok) {
-        console.error(`Failed to fetch related artists: ${relatedResponse.status}`)
+        console.error(`   Failed to fetch related artists: ${relatedResponse.status}`)
         const errorText = await relatedResponse.text()
-        console.error('Error response:', errorText)
+        console.error('   Error response:', errorText)
         continue
       }
       
       const relatedData = await relatedResponse.json()
-      const relatedArtists = relatedData.artists?.slice(0, 3) || []
+      const allRelatedArtists = relatedData.artists || []
       
-      console.log(`✓ Found ${relatedArtists.length} related artists for artist ${artistId}`)
+      // Shuffle related artists for randomization
+      const shuffledRelated = allRelatedArtists.sort(() => 0.5 - Math.random())
+      
+      // Get more related artists for variety (5 instead of 3)
+      const relatedArtists = shuffledRelated.slice(0, 5)
+      
+      console.log(`   ✓ Found ${allRelatedArtists.length} related artists, using ${relatedArtists.length}`)
       
       // For each related artist, get their top tracks
       for (const relatedArtist of relatedArtists) {
+        if (recommendations.length >= limit) break
+        
         try {
-          console.log(`  Fetching top tracks for ${relatedArtist.name}...`)
+          console.log(`     Fetching top tracks for ${relatedArtist.name}...`)
           
-          const topTracksUrl = `https://api.spotify.com/v1/artists/${relatedArtist.id}/top-tracks?market=US`
+          // Include market parameter from user's account
+          const topTracksUrl = `https://api.spotify.com/v1/artists/${relatedArtist.id}/top-tracks?market=from_token`
           const topTracksResponse = await fetch(topTracksUrl, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
           })
           
           if (!topTracksResponse.ok) {
-            console.error(`  Failed to fetch top tracks: ${topTracksResponse.status}`)
+            console.error(`     Failed to fetch top tracks: ${topTracksResponse.status}`)
+            const errorText = await topTracksResponse.text()
+            console.error(`     Error: ${errorText}`)
             continue
           }
           
           const topTracksData = await topTracksResponse.json()
-          const tracks = topTracksData.tracks?.slice(0, 3) || []
+          const allTracks = topTracksData.tracks || []
           
-          console.log(`  ✓ Got ${tracks.length} tracks from ${relatedArtist.name}`)
+          // Shuffle tracks for randomization
+          const shuffledTracks = allTracks.sort(() => 0.5 - Math.random())
+          
+          // Take 2-4 random tracks from each artist (randomized)
+          const numTracksToTake = Math.floor(Math.random() * 3) + 2 // Random 2-4
+          const tracks = shuffledTracks.slice(0, numTracksToTake)
+          
+          console.log(`     ✓ Got ${allTracks.length} tracks, adding ${tracks.length} from ${relatedArtist.name}`)
           
           // Add tracks to recommendations
           let added = 0
@@ -316,24 +348,52 @@ export async function getRecommendationsFromRelatedArtists(
             }
           })
           
-          console.log(`  Added ${added} new tracks to recommendations (total: ${recommendations.length})`)
+          console.log(`     Added ${added} new tracks (total: ${recommendations.length}/${limit})`)
           
-          if (recommendations.length >= limit) {
-            console.log(`Reached limit of ${limit} recommendations`)
-            break
-          }
         } catch (error) {
-          console.error('  Error fetching top tracks:', error)
+          console.error('     Error fetching top tracks:', error)
         }
       }
       
-      if (recommendations.length >= limit) break
     } catch (error) {
-      console.error('Error fetching related artists:', error)
+      console.error('   Error fetching related artists:', error)
     }
   }
   
-  console.log(`Generated ${recommendations.length} recommendations from related artists`)
+  console.log(`✅ Generated ${recommendations.length} recommendations from related artists`)
+  
+  // If we didn't get enough, try to fill with direct artist top tracks
+  if (recommendations.length < limit) {
+    console.log(`⚠️ Only got ${recommendations.length} recommendations, filling with artist top tracks...`)
+    
+    for (const artistId of shuffledArtists.slice(0, 3)) {
+      if (recommendations.length >= limit) break
+      
+      try {
+        const topTracksUrl = `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=from_token`
+        const response = await fetch(topTracksUrl, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          const tracks = (data.tracks || []).sort(() => 0.5 - Math.random()).slice(0, 3)
+          
+          tracks.forEach((track: any) => {
+            if (!seenTrackIds.has(track.id) && recommendations.length < limit) {
+              seenTrackIds.add(track.id)
+              recommendations.push(formatTrack(track))
+            }
+          })
+        }
+      } catch (error) {
+        console.error('   Error filling with artist tracks:', error)
+      }
+    }
+    
+    console.log(`   Filled to ${recommendations.length} recommendations`)
+  }
+  
   return recommendations
 }
 
@@ -590,13 +650,30 @@ export async function getGeneralRecommendations(
   topArtistIds: string[],
   limit: number = 20
 ): Promise<SpotifyTrack[]> {
-  // Pick up to 5 track seeds and 2 artist seeds
-  const seedTracks = topTrackIds.slice(0, 5)
-  const seedArtists = topArtistIds.slice(0, 2)
+  // Validate and filter IDs
+  const validTrackIds = topTrackIds.filter(id => id && id.length === 22 && /^[a-zA-Z0-9]+$/.test(id))
+  const validArtistIds = topArtistIds.filter(id => id && id.length === 22 && /^[a-zA-Z0-9]+$/.test(id))
+  
+  console.log('Validating seeds:', {
+    tracks: `${validTrackIds.length}/${topTrackIds.length}`,
+    artists: `${validArtistIds.length}/${topArtistIds.length}`
+  })
+  
+  if (validTrackIds.length === 0 && validArtistIds.length === 0) {
+    throw new Error('No valid track or artist IDs available for recommendations')
+  }
+  
+  // Randomly shuffle and pick seeds for more variety
+  // Spotify allows max 5 seeds total (tracks + artists combined)
+  const shuffledTracks = [...validTrackIds].sort(() => 0.5 - Math.random())
+  const shuffledArtists = [...validArtistIds].sort(() => 0.5 - Math.random())
+  
+  // Use 3 tracks and 2 artists for good variety
+  const seedTracks = shuffledTracks.slice(0, 3)
+  const seedArtists = shuffledArtists.slice(0, 2)
 
   const params = new URLSearchParams({
     limit: limit.toString(),
-    market: 'US',
   })
 
   if (seedTracks.length > 0) {
@@ -608,20 +685,50 @@ export async function getGeneralRecommendations(
 
   const url = `https://api.spotify.com/v1/recommendations?${params.toString()}`
   
-  console.log('Calling Spotify recommendations API:', url)
+  console.log('🎵 Calling Spotify Recommendations API (General mode)')
+  console.log('   URL:', url)
+  console.log('   Seeds:', {
+    trackCount: seedTracks.length,
+    artistCount: seedArtists.length,
+    trackIds: seedTracks,
+    artistIds: seedArtists
+  })
   
   const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${accessToken}` }
+    headers: { 
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
   })
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error('Spotify recommendations API error:', response.status, errorText)
+    console.error('❌ Spotify recommendations API error (General mode)')
+    console.error('   Status:', response.status)
+    console.error('   Status Text:', response.statusText)
+    console.error('   Error body:', errorText)
+    console.error('   Full URL:', url)
+    
+    // Try to parse error as JSON for more details
+    try {
+      const errorJson = JSON.parse(errorText)
+      console.error('   Parsed error:', errorJson)
+      
+      // Check for specific error types
+      if (errorJson.error?.message?.includes('invalid id')) {
+        console.error('   ⚠️ Invalid seed ID detected!')
+        console.error('   Track seeds:', seedTracks)
+        console.error('   Artist seeds:', seedArtists)
+      }
+    } catch (e) {
+      // Error wasn't JSON, that's fine
+    }
+    
     throw new Error(`Failed to get general recommendations: ${response.status}`)
   }
 
   const data = await response.json()
-  console.log(`✓ Received ${data.tracks?.length || 0} recommendations from Spotify`)
+  console.log(`✅ Received ${data.tracks?.length || 0} recommendations from Spotify API`)
   
   return (data.tracks || []).map(formatTrack)
 }
@@ -652,12 +759,58 @@ export async function getPlaylistTracks(
   const items = data.items || []
   
   const trackIds = items
-    .filter((item: any) => item.track && item.track.id)
+    .filter((item: any) => {
+      // Filter out local files and invalid tracks
+      if (!item.track) return false
+      if (!item.track.id) return false
+      if (item.track.is_local) return false
+      if (!item.track.uri || !item.track.uri.startsWith('spotify:track:')) return false
+      return true
+    })
     .map((item: any) => item.track.id)
   
-  console.log(`✓ Found ${trackIds.length} tracks in playlist`)
+  console.log(`✓ Found ${trackIds.length} valid Spotify tracks in playlist (filtered out local/invalid tracks)`)
   
   return trackIds
+}
+
+/**
+ * Test if Spotify Recommendations API is available for this account
+ * Returns true if API works, false if 404
+ */
+export async function testRecommendationsAPI(accessToken: string): Promise<boolean> {
+  // Use a well-known track as seed (Bohemian Rhapsody by Queen)
+  const testTrackId = '4u7EnebtmKWzUH433cf5Qv'
+  
+  const url = `https://api.spotify.com/v1/recommendations?seed_tracks=${testTrackId}&limit=1`
+  
+  console.log('🧪 Testing Spotify Recommendations API availability...')
+  
+  try {
+    const response = await fetch(url, {
+      headers: { 
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (response.status === 404) {
+      console.log('❌ Recommendations API returned 404 - API not available for this account')
+      return false
+    }
+
+    if (!response.ok) {
+      console.log('⚠️ Recommendations API error:', response.status, response.statusText)
+      return false
+    }
+
+    const data = await response.json()
+    console.log('✅ Recommendations API is working! Received', data.tracks?.length, 'test recommendations')
+    return true
+  } catch (error) {
+    console.error('❌ Error testing Recommendations API:', error)
+    return false
+  }
 }
 
 /**
@@ -674,31 +827,62 @@ export async function getPlaylistRecommendations(
   const trackIds = await getPlaylistTracks(accessToken, playlistId, 50)
   
   if (trackIds.length === 0) {
-    throw new Error('No tracks found in playlist')
+    throw new Error('No valid Spotify tracks found in playlist (may contain only local files)')
   }
 
-  // Randomly select up to 5 track IDs
+  // Randomly select up to 5 track IDs for variety
   const shuffled = trackIds.sort(() => 0.5 - Math.random())
   const seedTracks = shuffled.slice(0, 5)
 
-  console.log('Using seed tracks:', seedTracks)
-
-  const url = `https://api.spotify.com/v1/recommendations?seed_tracks=${seedTracks.join(',')}&limit=${limit}&market=US`
+  // Validate seed tracks (should be 22-character alphanumeric IDs)
+  const validSeeds = seedTracks.filter(id => id && id.length === 22 && /^[a-zA-Z0-9]+$/.test(id))
   
-  console.log('Calling Spotify recommendations API:', url)
+  if (validSeeds.length === 0) {
+    throw new Error('No valid track IDs found for recommendations')
+  }
+
+  console.log('🎵 Calling Spotify Recommendations API (Playlist mode)')
+  console.log('   Valid seed tracks:', validSeeds.length, '/', seedTracks.length)
+  console.log('   Track IDs:', validSeeds)
+
+  const url = `https://api.spotify.com/v1/recommendations?seed_tracks=${validSeeds.join(',')}&limit=${limit}`
+  
+  console.log('   Full URL:', url)
   
   const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${accessToken}` }
+    headers: { 
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
   })
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error('Spotify playlist recommendations error:', response.status, errorText)
+    console.error('❌ Spotify playlist recommendations error')
+    console.error('   Status:', response.status)
+    console.error('   Status Text:', response.statusText)
+    console.error('   Error body:', errorText)
+    console.error('   Full URL:', url)
+    console.error('   Seed tracks used:', validSeeds)
+    
+    // Try to parse error as JSON for more details
+    try {
+      const errorJson = JSON.parse(errorText)
+      console.error('   Parsed error:', errorJson)
+      
+      // Check if error message indicates invalid seeds
+      if (errorJson.error?.message?.includes('invalid id')) {
+        console.error('   ⚠️ Invalid track ID detected in seeds!')
+      }
+    } catch (e) {
+      // Error wasn't JSON
+    }
+    
     throw new Error(`Failed to get playlist recommendations: ${response.status}`)
   }
 
   const data = await response.json()
-  console.log(`✓ Received ${data.tracks?.length || 0} recommendations from Spotify`)
+  console.log(`✅ Received ${data.tracks?.length || 0} recommendations from Spotify API`)
   
   return (data.tracks || []).map(formatTrack)
 }
@@ -736,9 +920,9 @@ export async function getArtistRecommendations(
 ): Promise<SpotifyTrack[]> {
   console.log('Getting artist recommendations for artist:', artistId)
   
-  const url = `https://api.spotify.com/v1/recommendations?seed_artists=${artistId}&limit=${limit}&market=US`
+  const url = `https://api.spotify.com/v1/recommendations?seed_artists=${artistId}&limit=${limit}`
   
-  console.log('Calling Spotify recommendations API:', url)
+  console.log('Calling Spotify recommendations API for artist')
   
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -747,6 +931,7 @@ export async function getArtistRecommendations(
   if (!response.ok) {
     const errorText = await response.text()
     console.error('Spotify artist recommendations error:', response.status, errorText)
+    console.error('Full URL that failed:', url)
     throw new Error(`Failed to get artist recommendations: ${response.status}`)
   }
 

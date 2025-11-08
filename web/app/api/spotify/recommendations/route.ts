@@ -8,7 +8,9 @@ import {
   getArtistRecommendations,
   searchArtist,
   getRecommendationsFromArtistTopTracks,
+  getRecommendationsFromRelatedArtists,
   getPlaylistTracks,
+  testRecommendationsAPI,
   type SpotifyTrack,
 } from '@/lib/spotify'
 
@@ -104,8 +106,8 @@ export async function GET(request: NextRequest) {
         console.log('No synced data found, fetching live from Spotify...')
         
         try {
-          // Fetch top tracks live from Spotify
-          const topTracksUrl = 'https://api.spotify.com/v1/me/top/tracks?limit=5&time_range=medium_term'
+          // Fetch top tracks live from Spotify - get more for variety
+          const topTracksUrl = 'https://api.spotify.com/v1/me/top/tracks?limit=20&time_range=medium_term'
           const tracksResponse = await fetch(topTracksUrl, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
           })
@@ -118,7 +120,18 @@ export async function GET(request: NextRequest) {
           const tracksData = await tracksResponse.json()
           topTrackIds = (tracksData.items || []).map((t: any) => t.id)
           
-          console.log(`✓ Fetched ${topTrackIds.length} top tracks live from Spotify`)
+          // Also fetch top artists for better variety
+          const artistsUrl = 'https://api.spotify.com/v1/me/top/artists?limit=10&time_range=medium_term'
+          const artistsResponse = await fetch(artistsUrl, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          })
+          
+          if (artistsResponse.ok) {
+            const artistsData = await artistsResponse.json()
+            topArtistIds = (artistsData.items || []).map((a: any) => a.id)
+          }
+          
+          console.log(`✓ Fetched ${topTrackIds.length} top tracks and ${topArtistIds.length} artists live from Spotify`)
         } catch (error: any) {
           // Retry once if 401
           if (error.message?.includes('401')) {
@@ -126,12 +139,21 @@ export async function GET(request: NextRequest) {
             accessToken = newTokens.access_token
             await saveSpotifyTokens(user.id, newTokens.access_token, newTokens.refresh_token, newTokens.expires_in)
             
-            const topTracksUrl = 'https://api.spotify.com/v1/me/top/tracks?limit=5&time_range=medium_term'
+            const topTracksUrl = 'https://api.spotify.com/v1/me/top/tracks?limit=20&time_range=medium_term'
             const tracksResponse = await fetch(topTracksUrl, {
               headers: { 'Authorization': `Bearer ${accessToken}` }
             })
             const tracksData = await tracksResponse.json()
             topTrackIds = (tracksData.items || []).map((t: any) => t.id)
+            
+            const artistsUrl = 'https://api.spotify.com/v1/me/top/artists?limit=10&time_range=medium_term'
+            const artistsResponse = await fetch(artistsUrl, {
+              headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+            if (artistsResponse.ok) {
+              const artistsData = await artistsResponse.json()
+              topArtistIds = (artistsData.items || []).map((a: any) => a.id)
+            }
           } else {
             throw error
           }
@@ -165,8 +187,8 @@ export async function GET(request: NextRequest) {
           console.log('Spotify recommendations API returned 404, using fallback method...')
           
           try {
-            // Fetch full track objects for the fallback method
-            const topTracksUrl = 'https://api.spotify.com/v1/me/top/tracks?limit=5&time_range=medium_term'
+            // Fetch full track objects for the fallback method - get more for variety
+            const topTracksUrl = 'https://api.spotify.com/v1/me/top/tracks?limit=10&time_range=medium_term'
             const tracksResponse = await fetch(topTracksUrl, {
               headers: { 'Authorization': `Bearer ${accessToken}` }
             })
@@ -175,13 +197,13 @@ export async function GET(request: NextRequest) {
               const tracksData = await tracksResponse.json()
               const fullSeedTracks = tracksData.items || []
               
-              console.log('Using artist top tracks fallback method...')
-              recommendations = await getRecommendationsFromArtistTopTracks(
+              console.log('Using SMART fallback: related artists method (similar to Spotify ML)...')
+              recommendations = await getRecommendationsFromRelatedArtists(
                 accessToken,
                 fullSeedTracks,
                 20
               )
-              console.log(`✅ Got ${recommendations.length} recommendations from fallback method`)
+              console.log(`✅ Got ${recommendations.length} recommendations from smart fallback method`)
             } else {
               throw new Error('Failed to fetch tracks for fallback method')
             }
@@ -254,13 +276,13 @@ export async function GET(request: NextRequest) {
               const tracksData = await tracksResponse.json()
               const fullSeedTracks = tracksData.tracks || []
               
-              console.log('Using artist top tracks fallback method for playlist...')
-              recommendations = await getRecommendationsFromArtistTopTracks(
+              console.log('Using SMART fallback for playlist: related artists method (similar to Spotify ML)...')
+              recommendations = await getRecommendationsFromRelatedArtists(
                 accessToken,
                 fullSeedTracks,
                 20
               )
-              console.log(`✅ Got ${recommendations.length} recommendations from fallback method`)
+              console.log(`✅ Got ${recommendations.length} recommendations from smart fallback method`)
             } else {
               throw new Error('Failed to fetch tracks for fallback method')
             }
