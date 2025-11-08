@@ -940,3 +940,191 @@ export async function getArtistRecommendations(
   
   return (data.tracks || []).map(formatTrack)
 }
+
+/**
+ * Get related artists for an artist
+ */
+export async function getRelatedArtists(
+  accessToken: string,
+  artistId: string,
+  limit: number = 10
+): Promise<SpotifyArtist[]> {
+  console.log('Getting related artists for:', artistId)
+  
+  const url = `https://api.spotify.com/v1/artists/${artistId}/related-artists`
+  
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('Spotify related artists error:', response.status, errorText)
+    // Don't throw - just return empty array
+    return []
+  }
+
+  const data = await response.json()
+  const artists = data.artists || []
+  
+  console.log(`✓ Found ${artists.length} related artists`)
+  
+  // Return limited number with formatted data
+  return artists.slice(0, limit).map((artist: any) => ({
+    id: artist.id,
+    name: artist.name,
+    image: artist.images?.[0]?.url || null,
+  }))
+}
+
+/**
+ * Get an artist's top tracks
+ */
+export async function getArtistTopTracks(
+  accessToken: string,
+  artistId: string,
+  market: string = 'from_token'
+): Promise<SpotifyTrack[]> {
+  console.log('Getting top tracks for artist:', artistId)
+  
+  const url = `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=${market}`
+  
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('Spotify artist top tracks error:', response.status, errorText)
+    return []
+  }
+
+  const data = await response.json()
+  const tracks = data.tracks || []
+  
+  console.log(`✓ Found ${tracks.length} top tracks for artist`)
+  
+  return tracks.map(formatTrack)
+}
+
+/**
+ * Get user's recently played tracks
+ */
+export async function getUserRecentlyPlayed(
+  accessToken: string,
+  limit: number = 50
+): Promise<string[]> {
+  const url = `https://api.spotify.com/v1/me/player/recently-played?limit=${limit}`
+  
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  })
+
+  if (!response.ok) {
+    console.error('Failed to get recently played:', response.status)
+    return []
+  }
+
+  const data = await response.json()
+  const trackIds = (data.items || []).map((item: any) => item.track.id)
+  
+  return trackIds
+}
+
+/**
+ * Shuffle an array (Fisher-Yates algorithm)
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+/**
+ * Get artist songs recommendations based on user's listening data
+ */
+export async function getArtistSongsRecommendations(
+  accessToken: string,
+  artistId: string
+): Promise<SpotifyTrack[]> {
+  console.log('Getting artist songs recommendations for:', artistId)
+  
+  // 1. Get artist's top tracks
+  const artistTracks = await getArtistTopTracks(accessToken, artistId)
+  
+  if (artistTracks.length === 0) {
+    console.log('No tracks found for this artist')
+    return []
+  }
+  
+  console.log(`Found ${artistTracks.length} tracks from artist`)
+  
+  // 2. Try to get user's listening data for ranking
+  let userTopTrackIds: Set<string> = new Set()
+  let userRecentTrackIds: Set<string> = new Set()
+  
+  try {
+    // Get user's top tracks
+    const userTopResponse = await fetch('https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=medium_term', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    })
+    
+    if (userTopResponse.ok) {
+      const topData = await userTopResponse.json()
+      userTopTrackIds = new Set((topData.items || []).map((item: any) => item.id))
+      console.log(`User has ${userTopTrackIds.size} top tracks`)
+    }
+  } catch (error) {
+    console.log('Could not fetch user top tracks:', error)
+  }
+  
+  try {
+    // Get user's recently played
+    const recentIds = await getUserRecentlyPlayed(accessToken, 50)
+    userRecentTrackIds = new Set(recentIds)
+    console.log(`User has ${userRecentTrackIds.size} recently played tracks`)
+  } catch (error) {
+    console.log('Could not fetch recently played:', error)
+  }
+  
+  // 3. Score and rank tracks
+  const scoredTracks = artistTracks.map((track, index) => {
+    let score = 0
+    
+    // Base score from popularity (top tracks are already sorted by popularity)
+    score += (artistTracks.length - index) * 2
+    
+    // Boost if user has listened to this track
+    if (userTopTrackIds.has(track.id)) {
+      score += 50
+    }
+    if (userRecentTrackIds.has(track.id)) {
+      score += 30
+    }
+    
+    // Add randomness (0-20 points)
+    score += Math.random() * 20
+    
+    return { track, score }
+  })
+  
+  // 4. Sort by score (descending)
+  scoredTracks.sort((a, b) => b.score - a.score)
+  
+  // 5. Take top tracks but add shuffle for variety
+  const topCandidates = scoredTracks.slice(0, Math.min(15, scoredTracks.length))
+  
+  // 6. Shuffle the candidates for variety on each request
+  const shuffled = shuffleArray(topCandidates)
+  
+  // 7. Return 10-12 tracks (random count for more variety)
+  const returnCount = Math.min(10 + Math.floor(Math.random() * 3), shuffled.length)
+  const finalTracks = shuffled.slice(0, returnCount).map(item => item.track)
+  
+  console.log(`✓ Returning ${finalTracks.length} artist songs with personalized ranking`)
+  
+  return finalTracks
+}

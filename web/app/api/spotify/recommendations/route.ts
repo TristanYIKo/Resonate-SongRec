@@ -6,12 +6,15 @@ import {
   getGeneralRecommendations,
   getPlaylistRecommendations,
   getArtistRecommendations,
+  getRelatedArtists,
+  getArtistSongsRecommendations,
   searchArtist,
   getRecommendationsFromArtistTopTracks,
   getRecommendationsFromRelatedArtists,
   getPlaylistTracks,
   testRecommendationsAPI,
   type SpotifyTrack,
+  type SpotifyArtist,
 } from '@/lib/spotify'
 
 /**
@@ -349,25 +352,52 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      console.log('Getting artist recommendations for artist:', finalArtistId)
+      console.log('Getting artist song recommendations for artist:', finalArtistId)
 
       try {
-        recommendations = await getArtistRecommendations(accessToken, finalArtistId, 20)
-        console.log(`✓ Got ${recommendations.length} artist recommendations`)
+        // Get personalized song recommendations from this artist
+        recommendations = await getArtistSongsRecommendations(accessToken, finalArtistId)
+        console.log(`✓ Got ${recommendations.length} artist song recommendations`)
+        
+        if (recommendations.length === 0) {
+          return NextResponse.json({
+            error: 'No songs found',
+            message: 'This artist may not have any tracks available on Spotify.',
+            tracks: []
+          }, { status: 404 })
+        }
+        
       } catch (error: any) {
-        console.error('Artist recommendations error:', error.message)
+        console.error('Artist songs recommendations error:', error.message)
         
         if (error.message?.includes('401')) {
           const newTokens = await refreshSpotifyToken(refreshToken)
           accessToken = newTokens.access_token
           await saveSpotifyTokens(user.id, newTokens.access_token, newTokens.refresh_token, newTokens.expires_in)
           
-          recommendations = await getArtistRecommendations(accessToken, finalArtistId, 20)
+          // Retry
+          try {
+            recommendations = await getArtistSongsRecommendations(accessToken, finalArtistId)
+          } catch (retryError: any) {
+            console.error('Artist songs retry failed:', retryError.message)
+            return NextResponse.json({
+              error: 'Failed to get artist songs',
+              message: 'Unable to fetch songs for this artist. Please try again.',
+              tracks: []
+            }, { status: 500 })
+          }
         } else {
           console.error('Full error:', error)
-          throw error
+          return NextResponse.json({
+            error: 'Failed to get artist songs',
+            message: error.message || 'An error occurred while fetching songs.',
+            tracks: []
+          }, { status: 500 })
         }
       }
+
+      // Return artist songs (tracks array for consistency with other modes)
+      return NextResponse.json(recommendations)
 
     } else {
       return NextResponse.json(

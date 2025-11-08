@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 import { User } from '@supabase/supabase-js'
+import { Music, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import SpotifyFeatures from '@/components/SpotifyFeatures'
 
 export default function Home() {
@@ -46,7 +48,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-2xl">Loading...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -54,33 +56,40 @@ export default function Home() {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-4">
-        <div className="text-center max-w-2xl">
-          <h1 className="text-5xl font-bold mb-6">
-            Resonate - Music Recommender
+        <div className="text-center max-w-2xl space-y-6">
+          <div className="flex justify-center">
+            <Music className="h-16 w-16 text-primary" />
+          </div>
+          <h1 className="text-5xl font-bold tracking-tight text-white">
+            Resonate
           </h1>
-          <p className="text-xl text-gray-300 mb-8">
-            Get personalized music recommendations based on your Spotify listening history
+          <p className="text-xl text-gray-200">
+            Discover personalized music recommendations powered by your Spotify listening history
           </p>
-          <button
+          <Button
             onClick={handleLogin}
-            className="bg-spotify-green hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full text-lg transition-colors"
+            size="lg"
+            className="text-lg px-8 py-6"
           >
-            Login with Spotify
-          </button>
+            Connect with Spotify
+          </Button>
+          <p className="text-sm text-gray-300">
+            Sign in securely with your Spotify account
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      {/* Header with Title */}
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">
-          Get Recommendations
+        <h1 className="text-3xl font-bold tracking-tight mb-2 text-white">
+          Discover Music
         </h1>
-        <p className="text-gray-400">
-          Discover new music based on your Spotify taste
+        <p className="text-gray-200">
+          Find new songs tailored to your unique taste
         </p>
       </div>
 
