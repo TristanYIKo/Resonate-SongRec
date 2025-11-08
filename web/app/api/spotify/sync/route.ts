@@ -25,51 +25,54 @@ export async function POST(request: NextRequest) {
 
     console.log('Syncing Spotify data for user:', user.id)
 
-    // Get Spotify tokens
-    let tokens = await getSpotifyTokens(user.id)
-
-    if (!tokens) {
-      // Fallback to session tokens
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (session?.provider_token && session?.provider_refresh_token) {
-        tokens = {
-          access_token: session.provider_token,
-          refresh_token: session.provider_refresh_token,
-          expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
-        }
-      } else {
-        return NextResponse.json(
-          { error: 'No Spotify tokens found. Please log in with Spotify again.' },
-          { status: 400 }
-        )
-      }
+    // Get session first
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
+      return NextResponse.json(
+        { error: 'No active session. Please log in with Spotify again.' },
+        { status: 401 }
+      )
     }
 
-    let accessToken = tokens.access_token
-    const refreshToken = tokens.refresh_token
+    // Try to get token from session first (most reliable on Vercel)
+    let accessToken = session.provider_token
+    let refreshToken = session.provider_refresh_token
+    
+    console.log('Session provider:', session.user?.app_metadata?.provider)
+    console.log('Has provider_token:', !!accessToken)
+    console.log('Has provider_refresh_token:', !!refreshToken)
 
-    // Refresh token if expired
-    if (isTokenExpired(tokens.expires_at)) {
-      console.log('Token expired, refreshing...')
-      try {
-        const newTokens = await refreshSpotifyToken(refreshToken)
-        accessToken = newTokens.access_token
-        
-        await saveSpotifyTokens(
-          user.id,
-          newTokens.access_token,
-          newTokens.refresh_token,
-          newTokens.expires_in
-        )
-      } catch (error) {
-        console.error('Token refresh failed:', error)
+    // Fallback to database tokens if session doesn't have them
+    if (!accessToken || !refreshToken) {
+      console.log('Session tokens not found, checking database...')
+      const tokens = await getSpotifyTokens(user.id)
+      
+      if (tokens) {
+        accessToken = tokens.access_token
+        refreshToken = tokens.refresh_token
+        console.log('Using database tokens')
+      } else {
+        console.error('No tokens found in session or database')
         return NextResponse.json(
-          { error: 'Failed to refresh Spotify token. Please log in again.' },
+          { error: 'No Spotify tokens found. Please log out and log in with Spotify again.' },
           { status: 401 }
         )
       }
     }
+
+    if (!accessToken) {
+      return NextResponse.json(
+        { error: 'Missing Spotify access token. Please log out and log in again.' },
+        { status: 401 }
+      )
+    }
+
+    // Refresh token if expired
+    // Note: We can't reliably check expiry without the expires_at timestamp
+    // The token might work as-is from the session
+    
+    // Try to use the token, if it fails we'll get a 401 from Spotify
 
     // Fetch data from Spotify
     console.log('Fetching top tracks...')
