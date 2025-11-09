@@ -692,7 +692,7 @@ export async function getGeneralRecommendations(
   const seedArtists = shuffledArtists.slice(0, 4)
 
   const params = new URLSearchParams({
-    limit: (limit * 2).toString(), // Request more to allow filtering
+    limit: '60', // Request 60 tracks to allow filtering for unique artists
   })
 
   if (seedTracks.length > 0) {
@@ -751,9 +751,9 @@ export async function getGeneralRecommendations(
   
   const allTracks = (data.tracks || []).map(formatTrack)
   
-  // Filter to limit artist overlap (max 2 tracks per artist)
-  const filteredTracks = filterArtistOverlap(allTracks, limit, 2)
-  console.log(`   Filtered to ${filteredTracks.length} tracks (max 2 per artist)`)
+  // Filter to ensure each artist appears only ONCE (even as featured artist)
+  const filteredTracks = filterArtistOverlap(allTracks, limit, 1)
+  console.log(`   Filtered to ${filteredTracks.length} tracks (1 track per artist max, including features)`)
   
   return filteredTracks
 }
@@ -918,7 +918,7 @@ export async function getPlaylistRecommendations(
   console.log('   Seed tracks:', seedTracks.length, seedTracks)
   console.log('   Seed artists:', seedArtists.length, seedArtists)
 
-  const params = new URLSearchParams({ limit: (limit * 2).toString() }) // Request more to allow filtering
+  const params = new URLSearchParams({ limit: '60' }) // Request 60 tracks to allow filtering for unique artists
   if (seedTracks.length > 0) {
     params.set('seed_tracks', seedTracks.join(','))
   }
@@ -968,9 +968,9 @@ export async function getPlaylistRecommendations(
   
   const allTracks = (data.tracks || []).map(formatTrack)
   
-  // Filter to limit artist overlap (max 2 tracks per artist)
-  const filteredTracks = filterArtistOverlap(allTracks, limit, 2)
-  console.log(`   Filtered to ${filteredTracks.length} tracks (max 2 per artist)`)
+  // Filter to ensure each artist appears only ONCE (even as featured artist)
+  const filteredTracks = filterArtistOverlap(allTracks, limit, 1)
+  console.log(`   Filtered to ${filteredTracks.length} tracks (1 track per artist max, including features)`)
   
   return filteredTracks
 }
@@ -1135,16 +1135,16 @@ function shuffleArray<T>(array: T[]): T[] {
  * Filter tracks to limit artist overlap
  * @param tracks - Array of tracks to filter
  * @param limit - Maximum number of tracks to return
- * @param maxPerArtist - Maximum number of tracks per artist (default: 2)
+ * @param maxPerArtist - Maximum number of tracks per artist (default: 1)
  * @returns Filtered array of tracks with limited artist overlap
  */
 function filterArtistOverlap(
   tracks: SpotifyTrack[],
   limit: number,
-  maxPerArtist: number = 2
+  maxPerArtist: number = 1
 ): SpotifyTrack[] {
   const result: SpotifyTrack[] = []
-  const artistCounts = new Map<string, number>()
+  const seenArtists = new Set<string>()
   
   // Shuffle tracks first for variety
   const shuffledTracks = shuffleArray(tracks)
@@ -1152,25 +1152,17 @@ function filterArtistOverlap(
   for (const track of shuffledTracks) {
     if (result.length >= limit) break
     
-    // Get all artist names for this track
+    // Get all artist names for this track (including featured/secondary artists)
     const trackArtists = track.artists
     
-    // Check if adding this track would exceed the limit for any artist
-    let canAdd = true
-    for (const artistName of trackArtists) {
-      const currentCount = artistCounts.get(artistName) || 0
-      if (currentCount >= maxPerArtist) {
-        canAdd = false
-        break
-      }
-    }
+    // Check if ANY artist in this track has already been used
+    const hasSeenArtist = trackArtists.some(artistName => seenArtists.has(artistName))
     
-    // If we can add this track, increment counts for all its artists
-    if (canAdd) {
+    // Only add the track if NONE of its artists have been seen before
+    if (!hasSeenArtist) {
       result.push(track)
-      for (const artistName of trackArtists) {
-        artistCounts.set(artistName, (artistCounts.get(artistName) || 0) + 1)
-      }
+      // Mark all artists in this track as seen
+      trackArtists.forEach(artistName => seenArtists.add(artistName))
     }
   }
   
