@@ -1,204 +1,405 @@
-# Music Recommender - Full Stack Web App
+# Resonate - Spotify Music Dashboard & Recommendation System# Music Recommender - Full Stack Web App
 
-A full-stack music recommendation web application that uses Spotify data and machine learning to generate personalized track recommendations.
 
-## 🎵 Features
 
-- **Spotify OAuth Authentication** via Supabase
-- **Sync Spotify Listening History** - Fetch your top tracks and audio features
-- **ML-Powered Recommendations** - Get personalized recommendations based on your music taste
-- **Modern UI** - Built with Next.js and Tailwind CSS
-- **Scalable Architecture** - Separate frontend and backend services
+A modern full-stack web application that connects to your Spotify account to provide personalized music insights and AI-powered song recommendations. Visualize your listening habits, discover your top artists and tracks, and get tailored music suggestions based on your unique taste.A full-stack music recommendation web application that uses Spotify data and machine learning to generate personalized track recommendations.
 
-## 🏗️ Tech Stack
 
-### Frontend
-- **Next.js 14** (TypeScript, App Router)
-- **Tailwind CSS** for styling
+
+## 🎵 Features## 🎵 Features
+
+
+
+### Dashboard Analytics- **Spotify OAuth Authentication** via Supabase
+
+- **Listening Activity** - View when you listen to music throughout the day with hour-by-hour breakdown- **Sync Spotify Listening History** - Fetch your top tracks and audio features
+
+- **Top Genres** - Pie chart visualization of your most listened-to genres- **ML-Powered Recommendations** - Get personalized recommendations based on your music taste
+
+- **Top Artists** - Your favorite artists ranked by popularity- **Modern UI** - Built with Next.js and Tailwind CSS
+
+- **Top Tracks** - Your most played songs with album artwork and popularity scores- **Scalable Architecture** - Separate frontend and backend services
+
+
+
+### Smart Recommendations## 🏗️ Tech Stack
+
+- **General Recommendations** - AI-powered suggestions based on your overall listening profile
+
+- **Playlist-Based** - Get recommendations tailored to a specific playlist's vibe### Frontend
+
+- **Artist-Based** - Discover similar artists and expand your music taste- **Next.js 14** (TypeScript, App Router)
+
+- **Audio Feature Analysis** - Recommendations using Spotify's audio features (danceability, energy, valence, tempo)- **Tailwind CSS** for styling
+
 - **Supabase Auth** for authentication
-- **Supabase JS Client** for database access
 
-### Backend
-- **FastAPI** (Python) for ML/recommendation service
-- **scikit-learn** for similarity calculations
-- **NumPy** for numerical operations
+### Additional Features- **Supabase JS Client** for database access
 
-### Database & Auth
+- **Spotify OAuth** - Secure login with your Spotify account
+
+- **Data Sync** - Fetch and store your top 300 tracks and 75 artists### Backend
+
+- **Real-time Updates** - Dashboard updates immediately after syncing- **FastAPI** (Python) for ML/recommendation service
+
+- **Responsive Design** - Beautiful UI that works on desktop and mobile- **scikit-learn** for similarity calculations
+
+- **Dark Theme** - Modern dark interface optimized for music lovers- **NumPy** for numerical operations
+
+
+
+## 🛠️ Tech Stack### Database & Auth
+
 - **Supabase** (PostgreSQL)
-- **Spotify OAuth** integration
 
-## 📁 Project Structure
+### Frontend- **Spotify OAuth** integration
 
-```
-music-recommender/
+- **Next.js 14** - React framework with App Router and TypeScript
+
+- **Tailwind CSS** - Utility-first CSS framework for styling## 📁 Project Structure
+
+- **shadcn/ui** - High-quality React component library
+
+- **Recharts** - Composable charting library for data visualization```
+
+- **Lucide React** - Icon librarymusic-recommender/
+
 ├── web/                          # Next.js frontend
-│   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   ├── globals.css
+
+### Backend/API│   ├── app/
+
+- **Next.js API Routes** - Serverless API endpoints│   │   ├── layout.tsx
+
+- **FastAPI** (Python) - ML recommendation service│   │   ├── page.tsx
+
+- **scikit-learn** - Machine learning for similarity calculations│   │   ├── globals.css
+
 │   │   └── api/
-│   │       ├── sync-spotify/route.ts
-│   │       └── me/route.ts
-│   ├── lib/
-│   │   ├── supabaseClient.ts
+
+### Database & Authentication│   │       ├── sync-spotify/route.ts
+
+- **Supabase** - PostgreSQL database with built-in authentication│   │       └── me/route.ts
+
+- **Spotify OAuth 2.0** - Secure authentication via Spotify│   ├── lib/
+
+- **Row Level Security** - Data protection at the database level│   │   ├── supabaseClient.ts
+
 │   │   └── serverSupabase.ts
-│   ├── components/
-│   │   ├── Navbar.tsx
-│   │   └── RecommendationList.tsx
-│   └── package.json
+
+### Deployment│   ├── components/
+
+- **Vercel** - Frontend hosting with automatic deployments│   │   ├── Navbar.tsx
+
+- **Supabase Cloud** - Managed PostgreSQL database│   │   └── RecommendationList.tsx
+
+- **Railway/Render** - Backend Python service hosting (optional)│   └── package.json
+
 │
-├── backend/                      # Python FastAPI service
+
+## 📊 How It Works├── backend/                      # Python FastAPI service
+
 │   ├── main.py
-│   ├── recommender.py
+
+### Architecture Flow│   ├── recommender.py
+
 │   ├── supabase_client.py
-│   └── requirements.txt
-│
-└── database/
-    └── schema.sql               # Supabase database schema
-```
 
-## 🚀 Getting Started
+```│   └── requirements.txt
 
-### Prerequisites
+┌─────────────┐│
 
-- Node.js 18+ and npm/yarn
-- Python 3.9+
-- Supabase account
-- Spotify Developer account
+│   User      │└── database/
 
-### 1. Supabase Setup
+│  (Browser)  │    └── schema.sql               # Supabase database schema
 
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Enable Spotify OAuth provider in Authentication > Providers
-3. Run the SQL schema in `database/schema.sql` in the Supabase SQL Editor
-4. Get your project URL and keys from Settings > API
+└──────┬──────┘```
 
-### 2. Spotify Developer Setup
+       │
 
-1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-2. Create a new app
-3. Add redirect URI: `https://[your-project].supabase.co/auth/v1/callback`
-4. Copy Client ID and Client Secret
-5. Add these to Supabase Spotify OAuth settings
+       │ 1. Login with Spotify## 🚀 Getting Started
 
-### 3. Frontend Setup
+       ▼
 
-```bash
-cd web
+┌─────────────────────────┐### Prerequisites
 
-# Install dependencies
-npm install
+│   Supabase Auth         │
 
-# Copy environment template
-cp .env.local.example .env.local
+│  (OAuth Provider)       │- Node.js 18+ and npm/yarn
 
-# Edit .env.local with your values:
-# - NEXT_PUBLIC_SUPABASE_URL
-# - NEXT_PUBLIC_SUPABASE_ANON_KEY
-# - SPOTIFY_CLIENT_ID
-# - SPOTIFY_CLIENT_SECRET
-# - NEXT_PUBLIC_BACKEND_URL
+└──────┬──────────────────┘- Python 3.9+
+
+       │- Supabase account
+
+       │ 2. Store tokens & user data- Spotify Developer account
+
+       ▼
+
+┌─────────────────────────┐### 1. Supabase Setup
+
+│   Next.js Frontend      │
+
+│   (React + TypeScript)  │1. Create a new project at [supabase.com](https://supabase.com)
+
+└──────┬──────────────────┘2. Enable Spotify OAuth provider in Authentication > Providers
+
+       │3. Run the SQL schema in `database/schema.sql` in the Supabase SQL Editor
+
+       │ 3. Sync Spotify Data4. Get your project URL and keys from Settings > API
+
+       ▼
+
+┌─────────────────────────┐### 2. Spotify Developer Setup
+
+│   Spotify API           │
+
+│   - /me/top/tracks      │1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+
+│   - /me/top/artists     │2. Create a new app
+
+│   - /me/recently-played │3. Add redirect URI: `https://[your-project].supabase.co/auth/v1/callback`
+
+│   - /audio-features     │4. Copy Client ID and Client Secret
+
+└──────┬──────────────────┘5. Add these to Supabase Spotify OAuth settings
+
+       │
+
+       │ 4. Store in Database### 3. Frontend Setup
+
+       ▼
+
+┌─────────────────────────┐```bash
+
+│   Supabase PostgreSQL   │cd web
+
+│   - user_spotify_data   │
+
+│   - listening_history   │# Install dependencies
+
+│   - spotify_tokens      │npm install
+
+└──────┬──────────────────┘
+
+       │# Copy environment template
+
+       │ 5. Dashboard renders datacp .env.local.example .env.local
+
+       ▼
+
+┌─────────────────────────┐# Edit .env.local with your values:
+
+│   Dashboard Components  │# - NEXT_PUBLIC_SUPABASE_URL
+
+│   - ListeningActivity   │# - NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+│   - GenrePieChart       │# - SPOTIFY_CLIENT_ID
+
+│   - TopTracksList       │# - SPOTIFY_CLIENT_SECRET
+
+│   - TopArtistsList      │# - NEXT_PUBLIC_BACKEND_URL
+
+└─────────────────────────┘
 
 # Run development server
-npm run dev
-```
 
-The frontend will be available at `http://localhost:3000`
+For Recommendations:npm run dev
 
-### 4. Backend Setup
+┌──────────────────────────┐```
 
-```bash
-cd backend
+│  User clicks "Get Recs"  │
 
-# Create virtual environment
-python -m venv venv
+└──────┬───────────────────┘The frontend will be available at `http://localhost:3000`
 
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
+       │
 
-# Install dependencies
-pip install -r requirements.txt
+       │ 6. Request recommendations### 4. Backend Setup
 
-# Copy environment template
-cp .env.example .env
+       ▼
 
-# Edit .env with your values:
-# - SUPABASE_URL
-# - SUPABASE_SERVICE_ROLE_KEY
+┌─────────────────────────┐```bash
 
-# Run FastAPI server
+│   FastAPI Backend       │cd backend
+
+│   (ML Service)          │
+
+└──────┬──────────────────┘# Create virtual environment
+
+       │python -m venv venv
+
+       │ 7. Fetch user profile from DB
+
+       ▼# Activate virtual environment
+
+┌─────────────────────────┐# Windows:
+
+│   ML Algorithm          │venv\Scripts\activate
+
+│   - Calculate avg       │# Mac/Linux:
+
+│     audio features      │source venv/bin/activate
+
+│   - Cosine similarity   │
+
+│   - Rank tracks         │# Install dependencies
+
+└──────┬──────────────────┘pip install -r requirements.txt
+
+       │
+
+       │ 8. Return top matches# Copy environment template
+
+       ▼cp .env.example .env
+
+┌─────────────────────────┐
+
+│   Display Results       │# Edit .env with your values:
+
+│   - Track info          │# - SUPABASE_URL
+
+│   - Play on Spotify     │# - SUPABASE_SERVICE_ROLE_KEY
+
+└─────────────────────────┘
+
+```# Run FastAPI server
+
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
 
-The backend API will be available at `http://localhost:8000`
+### Data Processing Pipeline```
 
-## 🔧 Usage
 
-1. **Login**: Click "Login with Spotify" on the homepage
+
+1. **Authentication**: User logs in via Spotify OAuth, tokens stored in SupabaseThe backend API will be available at `http://localhost:8000`
+
+2. **Sync**: Fetches top tracks (300), top artists (75), recent plays (50) from Spotify API
+
+3. **Storage**: Data stored in PostgreSQL with user_id association## 🔧 Usage
+
+4. **Analysis**: Dashboard components process data for visualizations
+
+5. **Recommendations**: ML backend analyzes audio features and generates personalized suggestions1. **Login**: Click "Login with Spotify" on the homepage
+
 2. **Sync Data**: Click "Sync My Spotify" to fetch your top tracks
-3. **Get Recommendations**: Click "Get Recommendations" to generate personalized suggestions
+
+### Recommendation Algorithm3. **Get Recommendations**: Click "Get Recommendations" to generate personalized suggestions
+
 4. **Explore**: Click on any recommendation to open it in Spotify
 
-## 📊 How It Works
-
-### Recommendation Algorithm
-
-1. **Data Collection**: Fetches user's top 50 tracks from Spotify API
-2. **Feature Extraction**: Retrieves audio features (danceability, energy, valence, tempo, acousticness)
-3. **User Profile**: Calculates average feature vector from user's tracks
-4. **Similarity Calculation**: Uses cosine similarity to find tracks matching user preferences
-5. **Ranking**: Returns top 10 tracks with highest similarity scores
-
-### Data Flow
-
-```
-User Login (Spotify OAuth)
-    ↓
-Store tokens in Supabase
-    ↓
-Sync: Fetch tracks from Spotify API → Store in Supabase
-    ↓
-Recommend: Backend reads tracks → ML algorithm → Returns recommendations
-    ↓
-Display results in UI
 ```
 
-## 🚢 Deployment
+User Profile Creation:## 📊 How It Works
 
-### Frontend (Vercel)
+  ↓
 
-```bash
-cd web
-vercel deploy
-```
+Extract audio features from top 50 tracks### Recommendation Algorithm
 
-Add environment variables in Vercel dashboard.
+(danceability, energy, valence, acousticness, tempo)
 
-### Backend (Railway/Render/etc)
+  ↓1. **Data Collection**: Fetches user's top 50 tracks from Spotify API
 
-Deploy the `backend` folder to your Python hosting service. Ensure environment variables are set.
+Calculate average feature vector2. **Feature Extraction**: Retrieves audio features (danceability, energy, valence, tempo, acousticness)
 
-## 📝 Environment Variables
+  ↓3. **User Profile**: Calculates average feature vector from user's tracks
 
-### Frontend (.env.local)
-- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
-- `SPOTIFY_CLIENT_ID` - Spotify app client ID
-- `SPOTIFY_CLIENT_SECRET` - Spotify app client secret
+Compare with Spotify's track database4. **Similarity Calculation**: Uses cosine similarity to find tracks matching user preferences
+
+using cosine similarity5. **Ranking**: Returns top 10 tracks with highest similarity scores
+
+  ↓
+
+Rank tracks by similarity score### Data Flow
+
+  ↓
+
+Filter out already listened tracks```
+
+  ↓User Login (Spotify OAuth)
+
+Return top 10 recommendations    ↓
+
+```Store tokens in Supabase
+
+    ↓
+
+## 🚀 Future EnhancementsSync: Fetch tracks from Spotify API → Store in Supabase
+
+    ↓
+
+### Analytics & InsightsRecommend: Backend reads tracks → ML algorithm → Returns recommendations
+
+- [ ] **Mood Timeline** - Track your listening mood over time    ↓
+
+- [ ] **Listening Streaks** - Gamification with badges and achievementsDisplay results in UI
+
+- [ ] **Year in Review** - Spotify Wrapped-style annual summary```
+
+- [ ] **Collaboration Analysis** - See which artists you share with friends
+
+- [ ] **Discovery Score** - Measure how adventurous your music taste is## 🚢 Deployment
+
+
+
+### Recommendation Features### Frontend (Vercel)
+
+- [ ] **Playlist Generator** - Automatically create Spotify playlists from recommendations
+
+- [ ] **Genre Deep Dive** - Explore specific genres with curated recommendations```bash
+
+- [ ] **Decade Explorer** - Get recommendations from specific erascd web
+
+- [ ] **Energy Matcher** - Match recommendations to your current mood/activityvercel deploy
+
+- [ ] **Similar Artists Network** - Visual graph of artist relationships```
+
+
+
+### Social FeaturesAdd environment variables in Vercel dashboard.
+
+- [ ] **Share Dashboard** - Export and share your music stats
+
+- [ ] **Friend Recommendations** - Get suggestions based on friends' listening### Backend (Railway/Render/etc)
+
+- [ ] **Collaborative Playlists** - Build playlists together in real-time
+
+- [ ] **Music Taste Compatibility** - Compare profiles with friendsDeploy the `backend` folder to your Python hosting service. Ensure environment variables are set.
+
+
+
+### Technical Improvements## 📝 Environment Variables
+
+- [ ] **Offline Mode** - Cache data for offline viewing
+
+- [ ] **Export Data** - Download listening history as CSV/JSON### Frontend (.env.local)
+
+- [ ] **Webhook Integration** - Real-time sync with Spotify playback- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+
+- [ ] **Mobile App** - Native iOS/Android applications- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+
+- [ ] **Advanced Filters** - Filter recommendations by BPM, key, release year- `SPOTIFY_CLIENT_ID` - Spotify app client ID
+
+- [ ] **A/B Testing** - Multiple recommendation algorithms to choose from- `SPOTIFY_CLIENT_SECRET` - Spotify app client secret
+
 - `NEXT_PUBLIC_BACKEND_URL` - Backend API URL (e.g., http://localhost:8000)
 
-### Backend (.env)
-- `SUPABASE_URL` - Your Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (for admin access)
+### Performance & Scale
 
-## 🔐 Security Notes
+- [ ] **Background Sync** - Automatic periodic data updates### Backend (.env)
 
-- Never commit `.env` or `.env.local` files
+- [ ] **Caching Layer** - Redis for frequently accessed data- `SUPABASE_URL` - Your Supabase project URL
+
+- [ ] **CDN Integration** - Faster image loading- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (for admin access)
+
+- [ ] **Database Optimization** - Indexes and query optimization
+
+- [ ] **Rate Limiting** - Prevent API abuse## 🔐 Security Notes
+
+
+
+---- Never commit `.env` or `.env.local` files
+
 - Use service role key only in backend (never expose to frontend)
-- Spotify tokens are automatically refreshed when expired
+
+**Built with ❤️ for music lovers**- Spotify tokens are automatically refreshed when expired
+
 - Row Level Security (RLS) is enabled on all Supabase tables
 
 ## 🛠️ API Endpoints
