@@ -24,6 +24,12 @@ export default function PlaylistStatsChart({ playlists }: PlaylistStatsChartProp
   // Filter out invalid playlists
   const validPlaylists = playlists.filter(p => p && p.tracks && typeof p.tracks.total === 'number')
   
+  console.log('PlaylistStatsChart - Total playlists:', playlists.length)
+  console.log('PlaylistStatsChart - Valid playlists:', validPlaylists.length)
+  if (validPlaylists.length > 0) {
+    console.log('Sample playlist:', validPlaylists[0])
+  }
+  
   // Categorize playlists by song count
   const categories = [
     { label: '0-10 songs', min: 0, max: 10 },

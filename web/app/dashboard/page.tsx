@@ -164,7 +164,8 @@ export default function DashboardPage() {
       }
 
       const data = await response.json()
-      setPlaylists(data.items || [])
+      console.log('Playlists data:', data)
+      setPlaylists(data.playlists || [])
     } catch (error) {
       console.error('Error loading playlists:', error)
     }
