@@ -692,7 +692,7 @@ export async function getGeneralRecommendations(
   const seedArtists = shuffledArtists.slice(0, 4)
 
   const params = new URLSearchParams({
-    limit: limit.toString(),
+    limit: (limit * 2).toString(), // Request more to allow filtering
   })
 
   if (seedTracks.length > 0) {
@@ -749,7 +749,13 @@ export async function getGeneralRecommendations(
   const data = await response.json()
   console.log(`✅ Received ${data.tracks?.length || 0} recommendations from Spotify API`)
   
-  return (data.tracks || []).map(formatTrack)
+  const allTracks = (data.tracks || []).map(formatTrack)
+  
+  // Filter to limit artist overlap (max 2 tracks per artist)
+  const filteredTracks = filterArtistOverlap(allTracks, limit, 2)
+  console.log(`   Filtered to ${filteredTracks.length} tracks (max 2 per artist)`)
+  
+  return filteredTracks
 }
 
 /**
@@ -912,7 +918,7 @@ export async function getPlaylistRecommendations(
   console.log('   Seed tracks:', seedTracks.length, seedTracks)
   console.log('   Seed artists:', seedArtists.length, seedArtists)
 
-  const params = new URLSearchParams({ limit: limit.toString() })
+  const params = new URLSearchParams({ limit: (limit * 2).toString() }) // Request more to allow filtering
   if (seedTracks.length > 0) {
     params.set('seed_tracks', seedTracks.join(','))
   }
@@ -960,7 +966,13 @@ export async function getPlaylistRecommendations(
   const data = await response.json()
   console.log(`✅ Received ${data.tracks?.length || 0} recommendations from Spotify API`)
   
-  return (data.tracks || []).map(formatTrack)
+  const allTracks = (data.tracks || []).map(formatTrack)
+  
+  // Filter to limit artist overlap (max 2 tracks per artist)
+  const filteredTracks = filterArtistOverlap(allTracks, limit, 2)
+  console.log(`   Filtered to ${filteredTracks.length} tracks (max 2 per artist)`)
+  
+  return filteredTracks
 }
 
 /**
@@ -1117,6 +1129,52 @@ function shuffleArray<T>(array: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
   }
   return shuffled
+}
+
+/**
+ * Filter tracks to limit artist overlap
+ * @param tracks - Array of tracks to filter
+ * @param limit - Maximum number of tracks to return
+ * @param maxPerArtist - Maximum number of tracks per artist (default: 2)
+ * @returns Filtered array of tracks with limited artist overlap
+ */
+function filterArtistOverlap(
+  tracks: SpotifyTrack[],
+  limit: number,
+  maxPerArtist: number = 2
+): SpotifyTrack[] {
+  const result: SpotifyTrack[] = []
+  const artistCounts = new Map<string, number>()
+  
+  // Shuffle tracks first for variety
+  const shuffledTracks = shuffleArray(tracks)
+  
+  for (const track of shuffledTracks) {
+    if (result.length >= limit) break
+    
+    // Get all artist names for this track
+    const trackArtists = track.artists
+    
+    // Check if adding this track would exceed the limit for any artist
+    let canAdd = true
+    for (const artistName of trackArtists) {
+      const currentCount = artistCounts.get(artistName) || 0
+      if (currentCount >= maxPerArtist) {
+        canAdd = false
+        break
+      }
+    }
+    
+    // If we can add this track, increment counts for all its artists
+    if (canAdd) {
+      result.push(track)
+      for (const artistName of trackArtists) {
+        artistCounts.set(artistName, (artistCounts.get(artistName) || 0) + 1)
+      }
+    }
+  }
+  
+  return result
 }
 
 /**
